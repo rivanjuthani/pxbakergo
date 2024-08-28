@@ -8,7 +8,7 @@ import (
 	"github.com/rivanjuthani/pxokhttptls"
 )
 
-func main() {
+func Example() {
 	px := NewPerimeterX("", true, false)
 	profile := pxokhttptls.PXTLSClientProfile()
 
