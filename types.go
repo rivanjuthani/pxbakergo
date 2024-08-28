@@ -1,4 +1,4 @@
-package main
+package pxbakergo
 
 type ToDoResponse struct {
 	Do []string `json:"do"`

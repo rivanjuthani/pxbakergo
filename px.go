@@ -1,4 +1,4 @@
-package main
+package pxbakergo
 
 import (
 	"bytes"
@@ -31,9 +31,9 @@ type PerimeterX struct {
 	P3                    string
 	PackageName           string
 	IsInstantApp          bool
-	timestamp             float64
+	Timestamp             int64
 	Device                *PhoneSensor
-	client                tls_client.HttpClient
+	Client                tls_client.HttpClient
 	sensorUrl             string
 	DEBUG                 bool
 	internalPayloadHeader map[string]interface{}
@@ -45,22 +45,28 @@ type PerimeterX struct {
 	Vid                   string
 }
 
-func NewPerimeterX(PROXY string, DEBUG bool) *PerimeterX {
-	profile := pxokhttptls.PXTLSClientProfile()
+func NewPerimeterX(PROXY string, DEBUG bool, newHTTPClient bool) *PerimeterX {
+	var client tls_client.HttpClient
+	if newHTTPClient {
+		profile := pxokhttptls.PXTLSClientProfile()
 
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(30),
-		tls_client.WithClientProfile(profile),
-		tls_client.WithNotFollowRedirects(),
-		tls_client.WithCookieJar(jar),
-		tls_client.WithProxyUrl(PROXY),
+		jar := tls_client.NewCookieJar()
+		options := []tls_client.HttpClientOption{
+			tls_client.WithTimeoutSeconds(30),
+			tls_client.WithClientProfile(profile),
+			tls_client.WithNotFollowRedirects(),
+			tls_client.WithCookieJar(jar),
+			tls_client.WithProxyUrl(PROXY),
+		}
+
+		var err error
+		client, err = tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+		if err != nil {
+			return &PerimeterX{}
+		}
 	}
 
-	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
-	if err != nil {
-		return &PerimeterX{}
-	}
+	initTimestamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	return &PerimeterX{
 		SDKVersion:   "v3.2.1",
@@ -73,9 +79,9 @@ func NewPerimeterX(PROXY string, DEBUG bool) *PerimeterX {
 		P3:           "15.15.0",
 		PackageName:  "com.chegg",
 		IsInstantApp: false,
-		timestamp:    float64(time.Now().UnixNano()) / 1e9,
-		Device:       NewPhoneSensor(time.Now().UnixNano()),
-		client:       client,
+		Timestamp:    initTimestamp,
+		Device:       NewPhoneSensor(initTimestamp),
+		Client:       client,
 		sensorUrl:    fmt.Sprintf("https://collector-%s.perimeterx.net/api/v1/collector/mobile", "pxaotqiwnf"),
 		DEBUG:        DEBUG,
 	}
@@ -231,7 +237,7 @@ func (px *PerimeterX) SubmitSensor() map[string]interface{} {
 		},
 	}
 
-	resp, err := px.client.Do(req)
+	resp, err := px.Client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		return nil
@@ -300,7 +306,7 @@ func (px *PerimeterX) SubmitSensor() map[string]interface{} {
 		},
 	}
 
-	resp, err = px.client.Do(req)
+	resp, err = px.Client.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request:", err)
 		return nil

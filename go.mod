@@ -1,4 +1,4 @@
-module pxbakergo
+module github.com/rivanjuthani/pxbakergo
 
 go 1.22.4
 

@@ -1,4 +1,4 @@
-package main
+package pxbakergo
 
 import (
 	"encoding/base64"
